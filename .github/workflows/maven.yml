@@ -1,0 +1,39 @@
+# This workflow will build a Java project with Maven
+# For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-maven
+
+name: build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - os: macos-latest
+          java: 8
+          arch: arm64
+          runner: macos-latest
+          expander_leg: macos-latest-8-arm64
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+    - name: Enable long paths for git
+      run: git config --global core.longpaths true
+    - uses: actions/checkout@v2
+    - name: Set up JDK 8
+      uses: actions/setup-java@v2
+      with:
+        java-version: '${{ matrix.java }}'
+        distribution: 'adopt'
+        # AdoptOpenJDK publishes no native Windows aarch64 build of JDK 8, so on
+        # windows-11-arm Java 8 uses the x64 JDK, which runs under Windows' x64 emulation.
+        architecture: ${{ (matrix.arch == 'arm64' && !(matrix.os == 
+          'windows-latest' && matrix.java == 8)) && 'aarch64' || 'x64' }}
+    - name: Build with Maven
+      run: mvn -B package --file pom.xml
+    name: build [${{ matrix.expander_leg }}]
+    timeout-minutes: 150
